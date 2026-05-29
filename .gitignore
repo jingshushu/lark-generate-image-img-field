@@ -1,5 +1,6 @@
 node_modules/
 output/
+.tools/
 config.json
 .DS_Store
 npm-debug.log*
