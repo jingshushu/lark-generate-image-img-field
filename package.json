@@ -1,0 +1,25 @@
+{
+  "name": "lark-generate-image-img-field",
+  "version": "1.0.0",
+  "description": "飞书多维表字段捷径：使用云雾 gpt-image-2 生成图片附件",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "block-basekit-cli start:field",
+    "build": "block-basekit-cli build:field",
+    "pack": "block-basekit-cli pack:field",
+    "dev": "block-basekit-cli dev:field",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@lark-opdev/block-basekit-server-api": "1.0.6"
+  },
+  "devDependencies": {
+    "@lark-opdev/block-basekit-cli": "1.0.5",
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
