@@ -86,6 +86,7 @@ export async function executeImageGeneration(
   context: ExecuteContext,
   runtimeOptions: RuntimeOptions = {}
 ): Promise<ShortcutResult> {
+  const startedAt = Date.now();
   try {
     debugLog(context, "start", {
       params: redactParamsForLog(formItemParams)
@@ -93,7 +94,7 @@ export async function executeImageGeneration(
     const normalized = normalizeParams(formItemParams);
     const resultUrls =
       normalized.model === DIRECT_MODEL
-        ? await createDirectImages(normalized, getReferenceImageUrls(normalized.referenceImages), context.fetch)
+        ? await createDirectImages(normalized, getReferenceImageUrls(normalized.referenceImages), context)
         : await createTaskImages(
             normalized,
             await downloadReferenceImages(normalized.referenceImages, context.fetch),
@@ -108,11 +109,20 @@ export async function executeImageGeneration(
       throw new FieldMappedError(FieldCode.Error, "云雾任务完成但没有返回图片 URL");
     }
 
+    debugLog(context, "complete", {
+      durationMs: Date.now() - startedAt,
+      imageCount: data.length
+    });
     return {
       code: FieldCode.Success,
       data
     };
   } catch (error) {
+    debugLog(context, "error", {
+      durationMs: Date.now() - startedAt,
+      code: error instanceof FieldMappedError ? error.code : FieldCode.Error,
+      message: error instanceof Error ? error.message : String(error)
+    });
     if (error instanceof FieldMappedError) {
       return {
         code: error.code,
@@ -278,7 +288,7 @@ async function createTasks(
 async function createDirectImages(
   params: ReturnType<typeof normalizeParams>,
   imageUrls: string[],
-  fetchImpl: FetchLike
+  context: ExecuteContext
 ) {
   const requestUrl = `${YUNWU_API_BASE_URL}${YUNWU_GENERATIONS_ENDPOINT}`;
   const body: Record<string, unknown> = {
@@ -294,9 +304,10 @@ async function createDirectImages(
 
   const bodyText = JSON.stringify(body);
   logDirectRequest(body, bodyText.length);
+  const startedAt = Date.now();
 
   const response = await fetchWithNetworkRetry(
-    fetchImpl,
+    context.fetch,
     requestUrl,
     {
       method: "POST",
@@ -310,6 +321,15 @@ async function createDirectImages(
     "createDirectImages"
   );
 
+  console.log(
+    JSON.stringify({
+      type: "yunwu_direct_response",
+      logID: context.logID,
+      status: response.status,
+      ok: response.ok,
+      durationMs: Date.now() - startedAt
+    })
+  );
   await assertProviderResponse(response, "createDirectImages", requestUrl);
   const payload = await response.json();
   const urls = extractDirectImageUrls(payload);

@@ -117,6 +117,34 @@ describe("executeImageGeneration", () => {
     );
   });
 
+  it("logs the direct provider response and completed execution", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const fetchImpl = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        data: [{ url: "https://yunwu.ai/result/logged.png" }]
+      })
+    );
+
+    const result = await executeImageGeneration(
+      {
+        prompt: "记录耗时",
+        model: { value: "gpt-image-2-all", label: "gpt-image-2-all" },
+        referenceImages: [],
+        imageCount: "1"
+      },
+      makeContext(fetchImpl, "log_diagnostics")
+    );
+
+    const logs = logSpy.mock.calls.map(([entry]) => String(entry));
+    logSpy.mockRestore();
+
+    expect(result.code).toBe(FieldCode.Success);
+    expect(logs.some((entry) => entry.includes('"type":"yunwu_direct_response"'))).toBe(true);
+    expect(logs.some((entry) => entry.includes('"event":"complete"') && entry.includes('"logID":"log_diagnostics"'))).toBe(
+      true
+    );
+  });
+
   it("sends reference image URLs directly in the gpt-image-2-all image field", async () => {
     const fetchImpl = vi
       .fn()
